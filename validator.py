@@ -156,6 +156,21 @@ def _fix_placeholder_columns(code: str, df: pd.DataFrame) -> str:
         'region_col': actual_region
     }
     
+    # Dynamic correction of hallucinated column names if they are used but don't exist in df
+    lower_columns = [c.lower() for c in df.columns]
+    hallucinated_mappings = {
+        'order_date': actual_date,
+        'date': actual_date,
+        'total_amount': actual_val,
+        'price': actual_val,
+        'category': actual_cat,
+        'region': actual_region,
+    }
+    
+    for hallucinated, actual in hallucinated_mappings.items():
+        if actual and hallucinated not in lower_columns:
+            mappings[hallucinated] = actual
+            
     for placeholder, actual in mappings.items():
         if actual:
             # Replace quoted placeholder: 'category_col' -> 'category'
@@ -171,8 +186,8 @@ def _fix_placeholder_columns(code: str, df: pd.DataFrame) -> str:
 
 def _fix_missing_time_cols(code: str, df: pd.DataFrame) -> str:
     """
-    If the code uses 'year', 'month', or 'quarter' but does not define them,
-    injects their definitions using the identified datetime column.
+    If the code uses time components ('year', 'month', 'quarter', 'hour', etc.)
+    but does not define them, injects their definitions using the identified datetime column.
     """
     # Find datetime column in df
     dt_cols = [col for col in df.columns if pd.api.types.is_datetime64_any_dtype(df[col])]
@@ -186,26 +201,28 @@ def _fix_missing_time_cols(code: str, df: pd.DataFrame) -> str:
         
     date_col = dt_cols[0]
     
-    # Check if time components are used but not defined
-    has_year = re.search(r'["\']\byear\b["\']', code)
-    defined_year = re.search(r'["\']\byear\b["\']\s*\]\s*(?<![!=<>])=(?![=])', code) or re.search(r'\byear\s*(?<![!=<>])=(?![=])', code)
-    
-    has_month = re.search(r'["\']\bmonth\b["\']', code)
-    defined_month = re.search(r'["\']\bmonth\b["\']\s*\]\s*(?<![!=<>])=(?![=])', code) or re.search(r'\bmonth\s*(?<![!=<>])=(?![=])', code)
-
-    has_quarter = re.search(r'["\']\bquarter\b["\']', code)
-    defined_quarter = re.search(r'["\']\bquarter\b["\']\s*\]\s*(?<![!=<>])=(?![=])', code) or re.search(r'\bquarter\s*(?<![!=<>])=(?![=])', code)
+    # Supported time components and their pandas datetime conversions
+    time_components = {
+        'year': 'dt.year',
+        'month': 'dt.month',
+        'quarter': 'dt.quarter',
+        'hour': 'dt.hour',
+        'day': 'dt.day',
+        'weekday': 'dt.weekday',
+        'dayofweek': 'dt.dayofweek',
+        'day_of_week': 'dt.dayofweek',
+        'month_name': "dt.strftime('%b')",
+    }
 
     # Determine DataFrame variable name (dfc or df)
     df_var = 'dfc' if 'dfc' in code else 'df'
     
     injections = []
-    if has_year and not defined_year:
-        injections.append(f"{df_var}['year'] = {df_var}['{date_col}'].dt.year")
-    if has_month and not defined_month:
-        injections.append(f"{df_var}['month'] = {df_var}['{date_col}'].dt.month")
-    if has_quarter and not defined_quarter:
-        injections.append(f"{df_var}['quarter'] = {df_var}['{date_col}'].dt.quarter")
+    for comp, dt_attr in time_components.items():
+        has_comp = re.search(rf'["\']\b{comp}\b["\']', code)
+        defined_comp = re.search(rf'["\']\b{comp}\b["\']\s*\]\s*(?<![!=<>])=(?![=])', code) or re.search(rf'\b{comp}\s*(?<![!=<>])=(?![=])', code)
+        if has_comp and not defined_comp:
+            injections.append(f"{df_var}['{comp}'] = {df_var}['{date_col}'].{dt_attr}")
         
     if injections:
         # Try to insert after dfc = df.copy() or dfc = df

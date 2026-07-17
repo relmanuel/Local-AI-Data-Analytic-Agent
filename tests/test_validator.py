@@ -222,6 +222,23 @@ class TestFixPlaceholderColumns:
         assert "date_col" not in result
         assert "value_col" not in result
 
+    def test_replaces_hallucinated_columns_with_actual_columns(self):
+        import pandas as pd
+        df = pd.DataFrame({
+            'product_name': ['A', 'B'],
+            'sales_amount': [10.0, 20.0],
+            'created_at': pd.to_datetime(['2024-01-01', '2024-01-02'])
+        })
+        code = "result_df = dfc.groupby(['category', 'order_date'])[['total_amount']].sum()"
+        result = _fix_placeholder_columns(code, df)
+        assert "'product_name'" in result
+        assert "'created_at'" in result
+        assert "'sales_amount'" in result
+        assert "category" not in result
+        assert "order_date" not in result
+        assert "total_amount" not in result
+
+
 
 # ─── _fix_missing_time_cols ──────────────────────────────────────────────────
 
@@ -238,11 +255,12 @@ class TestFixMissingTimeCols:
         code = """
 dfc = df.copy()
 dfc = dfc[dfc['order_date'].dt.year == 2024]
-grouped = dfc.groupby(['category', 'year', 'month']).sum()
+grouped = dfc.groupby(['category', 'year', 'month', 'hour']).sum()
 """
         result = _fix_missing_time_cols(code, df)
         assert "dfc['year'] = dfc['order_date'].dt.year" in result
         assert "dfc['month'] = dfc['order_date'].dt.month" in result
+        assert "dfc['hour'] = dfc['order_date'].dt.hour" in result
         assert "dfc['quarter']" not in result
 
 
