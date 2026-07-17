@@ -19,6 +19,8 @@ Rules:
 7. You may modify `df` directly, or work on a copy.
 8. IMPORTANT: The examples below use generic column names (like 'category_col', 'value_col', 'date_col'). You MUST adapt them to use the ACTUAL column names provided in the Data Schema below.
 9. COMPARISON RULES: When asked for the "least", "most", "top", "worst", or "best" category/item, DO NOT filter your final `result_df` or `fig` to show only that single winning row. You MUST output a comparison of ALL categories (sorted, so the winner is clear) or a month-by-month trend of the target category. This allows the user to see the context and compare.
+10. STACKED CHARTS: When asked for a "stacked" chart, you MUST group by at least two columns (typically a time/month component on the x-axis and another category/region/payment column for the color/legend). DO NOT pass a single-element list like color=['Sales'] to px.bar; instead, use a real column name from the dataset (e.g. color='category_col') to slice the bars into stacks.
+
 
 --- FEW-SHOT EXAMPLES ---
 

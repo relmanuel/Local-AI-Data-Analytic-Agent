@@ -14,6 +14,7 @@ def validate_and_fix(code: str, df: pd.DataFrame = None) -> str:
     code = _fix_multi_column_groupby(code)
     code = _fix_agg_multiindex(code)
     code = _fix_diff_shift(code)
+    code = _fix_plotly_constant_color(code)
     code = _remove_show_calls(code)
     return code
 
@@ -217,6 +218,20 @@ def _fix_missing_time_cols(code: str, df: pd.DataFrame) -> str:
             code = "\n".join(injections) + "\n" + code
             
     return code
+
+
+def _fix_plotly_constant_color(code: str) -> str:
+    """
+    Plotly Express throws a ValueError if color is set to a list with length
+    different from the DataFrame (e.g. color=['Sales in 2025'] when DataFrame has 9 rows).
+    This function removes invalid single-element list definitions for color.
+    """
+    # Remove pattern: , color=['...'] or , color=["..."]
+    code = re.sub(r',\s*color\s*=\s*\[\s*[\'"][^\'"]+[\'"]\s*\]', '', code)
+    # Also handle if it is the first argument or without leading comma (e.g. px.bar(..., color=['x']))
+    code = re.sub(r'\bcolor\s*=\s*\[\s*[\'"][^\'"]+[\'"]\s*\]\s*,?\s*', '', code)
+    return code
+
 
 
 

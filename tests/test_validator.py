@@ -245,3 +245,22 @@ grouped = dfc.groupby(['category', 'year', 'month']).sum()
         assert "dfc['month'] = dfc['order_date'].dt.month" in result
         assert "dfc['quarter']" not in result
 
+
+# ─── _fix_plotly_constant_color ─────────────────────────────────────────────
+
+from validator import _fix_plotly_constant_color
+
+class TestFixPlotlyConstantColor:
+    def test_removes_constant_color_list_argument(self):
+        code = "fig = px.bar(monthly_sales, x='order_date', y='total_amount', color=['Sales in 2025'], title='Monthly Sales')"
+        result = _fix_plotly_constant_color(code)
+        assert "color=" not in result
+        assert "px.bar(monthly_sales, x='order_date', y='total_amount', title='Monthly Sales')" in result
+
+    def test_removes_constant_color_list_with_double_quotes(self):
+        code = 'fig = px.line(df, x="x", y="y", color=["Constant"]'
+        result = _fix_plotly_constant_color(code)
+        assert "color=" not in result
+        assert 'fig = px.line(df, x="x", y="y"' in result
+
+
