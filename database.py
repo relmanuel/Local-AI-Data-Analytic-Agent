@@ -11,10 +11,13 @@ def load_csv(file_or_path):
         # Auto-detect and parse datetime columns
         for col in df.columns:
             if df[col].dtype == 'object':
-                try:
-                    df[col] = pd.to_datetime(df[col])
-                except Exception:
-                    pass
+                if 'date' in col.lower() or 'time' in col.lower():
+                    df[col] = pd.to_datetime(df[col], errors='coerce')
+                else:
+                    try:
+                        df[col] = pd.to_datetime(df[col])
+                    except Exception:
+                        pass
                     
         return df
     except Exception as e:

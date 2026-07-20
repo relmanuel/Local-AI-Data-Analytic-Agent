@@ -74,7 +74,7 @@ streamlit run app.py
 This will automatically launch the dashboard in your default browser at `http://localhost:8501`.
 
 ### How to Use the App:
-1. **Model Name**: In the sidebar, specify the name of the local Ollama model you pulled (default is `qwen2.5-coder:1.5b`).
+1. **Model Name**: In the sidebar, you can see the model that is being used (default is `qwen2.5-coder:1.5b`).
 2. **Upload CSV**: Upload your target dataset (e.g., e-commerce sales, user transactions, stock data) using the file uploader.
 3. **Ask a Question**: Type a natural language request in the prompt area, for example:
    * *"Show me the least growing category in 2024 and tell me why"*

@@ -12,7 +12,22 @@ st.title("Offline AI Data Analyst")
 
 # Sidebar setup
 st.sidebar.header("Configuration")
-model_choice = st.sidebar.text_input("Ollama Model Name", value="qwen2.5-coder:1.5b")
+
+# Dynamically retrieve the active model from Ollama
+try:
+    import ollama
+    models_response = ollama.list()
+    available_models = [m.model for m in models_response.models]
+    if "qwen2.5-coder:1.5b" in available_models:
+        model_choice = "qwen2.5-coder:1.5b"
+    elif available_models:
+        model_choice = available_models[0]
+    else:
+        model_choice = "qwen2.5-coder:1.5b"
+except Exception:
+    model_choice = "qwen2.5-coder:1.5b"
+
+st.sidebar.info(f"Active Ollama Model: **{model_choice}**")
 
 st.sidebar.header("Upload Data")
 uploaded_file = st.sidebar.file_uploader("Upload your CSV file", type=["csv"])
@@ -44,8 +59,8 @@ if uploaded_file is not None:
                         # 2. Execute Code safely
                         output = run_secure_code(code, df)
                             
-                        # If error, silently auto-fix up to 3 times
-                        max_retries = 3
+                        # If error, silently auto-fix up to 10 times
+                        max_retries = 10
                         retries = 0
                         while output['error'] and retries < max_retries:
                             retries += 1
