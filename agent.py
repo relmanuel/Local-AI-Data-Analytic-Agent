@@ -47,15 +47,17 @@ fig = px.bar(result_df, x='month_name', y='value_col', color='group_col', barmod
              title='Value by Group per Month in 2024')
 ```
 
-Example 3: "Show trend by quarter for a specific category"
+Example 3: "What is the monthly trend of average value in 2024?"
 ```python
 dfc = df.copy()
-dfc = dfc[dfc['category_col'] == 'TargetValue']
 dfc['date_col'] = pd.to_datetime(dfc['date_col'], errors='coerce')
-dfc['quarter'] = dfc['date_col'].dt.quarter
-result_df = dfc.groupby('quarter')['value_col'].sum().reset_index()
-fig = px.line(result_df, x='quarter', y='value_col', markers=True,
-              title='Trend by Quarter')
+dfc = dfc[dfc['date_col'].dt.year == 2024]
+dfc['month'] = dfc['date_col'].dt.month
+dfc['month_name'] = dfc['date_col'].dt.strftime('%b')
+result_df = dfc.groupby(['month', 'month_name'])['value_col'].mean().reset_index()
+result_df = result_df.sort_values('month')[['month_name', 'value_col']]
+fig = px.line(result_df, x='month_name', y='value_col', markers=True,
+              title='Monthly Average Trend in 2024')
 ```
 
 Example 4: "What is the distribution of metric by region?"
@@ -123,7 +125,7 @@ Rules for the fix:
 3. DO NOT call `fig.show()` or `plt.show()`.
 4. The dataset is ALREADY loaded in `df`. DO NOT call `pd.read_csv()` or load any data yourself. Remove any such loading code if present in the failed code.
 5. If fixing a datetime/integer comparison error (e.g., `Invalid comparison between dtype=datetime64[ns] and int`), ensure you use `.dt.year` on the datetime column before comparing it to integer years.
-6. If fixing a `ValueError: Value of 'y' is not the name of a column` (e.g., missing 'yoy_change'), it means you forgot to compute that column. Explicitly calculate and add the missing column to the DataFrame before plotting.
+6. If fixing a `ValueError: Value of '...' is not the name of a column`, you passed a column name to Plotly that is missing from `result_df`. Fix this by ensuring the missing column (e.g. `'month_name'`) is included in your `.groupby(['month', 'month_name'])` so it survives the aggregation, or pass an existing column name to Plotly. DO NOT rename columns to 'x' and 'y'.
 7. If fixing an `AttributeError: Can only use .dt accessor with datetimelike values`, it means the column is a string. You MUST convert it using `df['column_name'] = pd.to_datetime(df['column_name'], errors='coerce')` before using `.dt`.
 8. If fixing a `ValueError: Length mismatch: Expected axis has X elements, new values have Y elements`, use `.rename(columns={'old_name': 'new_name'})` instead of assigning a list to `.columns`.
 9. If fixing a `TypeError: datetime64 type does not support operation 'sum'`, you forgot to explicitly select the numeric column before calling `.sum()`. Fix it by specifying the column (e.g., `df.groupby('col')['profit_margin'].sum()`).
@@ -171,6 +173,8 @@ Rules:
 3. Explain the "why" or the trend (e.g., how values changed from month to month) based strictly on the provided table.
 4. Rely ONLY on the data below. Do not make up any other facts.
 5. Provide actionable insights or recommendations if they can be logically drawn from the data summary.
+6. Answer BASED on what is prompted or asked by the user. Do not answer beyond what is asked or prompted by the user.
+7. ACCURACY: DO NOT assume the first and last rows are the minimum or maximum! You MUST scan ALL rows in the table carefully to find the true mathematical highest and lowest values before stating which item is the highest/lowest.
 
 User Question: {query}
 

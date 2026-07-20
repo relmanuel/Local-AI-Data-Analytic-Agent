@@ -60,7 +60,7 @@ if uploaded_file is not None:
                         output = run_secure_code(code, df)
                             
                         # If error, silently auto-fix up to 10 times
-                        max_retries = 10
+                        max_retries = 5
                         retries = 0
                         while output['error'] and retries < max_retries:
                             retries += 1
@@ -109,9 +109,22 @@ if uploaded_file is not None:
                                 fig.update_traces(textposition='auto', selector=dict(type='bar'))
                                 fig.update_traces(textposition='inside', textinfo='percent+label', selector=dict(type='pie'))
                                 fig.update_traces(texttemplate='%{text}', selector=dict(type='scatter', mode='markers'))
+                                def format_label(val):
+                                    try:
+                                        fval = float(val)
+                                        if fval >= 1000:
+                                            return f"{fval/1000:.1f}k ({val})"
+                                        else:
+                                            return str(val)
+                                    except (ValueError, TypeError):
+                                        return str(val)
+                                        
                                 fig.for_each_trace(
-                                    lambda t: t.update(text=t.y, texttemplate='%{text:.2s}', textposition='outside')
-                                    if hasattr(t, 'y') and t.y is not None and t.type == 'bar' else None
+                                    lambda t: t.update(
+                                        text=[format_label(v) for v in t.y] if hasattr(t, 'y') and t.y is not None else None,
+                                        texttemplate='%{text}', 
+                                        textposition='outside'
+                                    ) if hasattr(t, 'y') and t.y is not None and t.type == 'bar' else None
                                 )
                                 # Hide y-axis tick labels
                                 fig.update_layout(
